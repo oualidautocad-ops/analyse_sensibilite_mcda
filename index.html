@@ -1,602 +1,564 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analyse de Sensibilité MCDA - Calculateur</title>
-    <style>
-        /* Styles de base pour simuler une interface moderne (sans Tailwind/Shadcn) */
-        body { font-family: 'Arial', sans-serif; background-color: #f4f7f9; color: #333; padding: 20px; }
-        .container { max-width: 1200px; margin: auto; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); padding: 30px; }
-        h2 { color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-top: 0; }
-        .tab-controls { display: flex; margin-bottom: 20px; }
-        .tab-controls button { flex-grow: 1; padding: 10px 20px; border: none; background-color: #e9ecef; color: #495057; cursor: pointer; border-radius: 4px 4px 0 0; transition: background-color 0.3s; }
-        .tab-controls button.active { background-color: #007bff; color: white; }
-        .input-section, .results-section { margin-top: 20px; }
-        
-        /* Configuration et Poids */
-        .config-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px; background: #e6f3ff; border-radius: 6px; }
-        .weights-input, .names-input { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
-        .weight-item, .name-item { flex: 1 1 180px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; background-color: #f8f9fa; }
-        .weight-item input, .name-item input { width: 100%; box-sizing: border-box; padding: 5px; border: 1px solid #ddd; border-radius: 3px; }
-        #weight-sum { font-weight: bold; margin-left: 20px; padding: 5px 10px; border-radius: 4px; }
-        
-        /* Matrice et Tableaux */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #dee2e6; padding: 8px; text-align: center; }
-        th { background-color: #007bff; color: white; }
-        td input { width: 60px; padding: 5px; border: 1px solid #ddd; border-radius: 3px; text-align: center; }
-        
-        /* Boutons */
-        .action-buttons { margin-top: 20px; display: flex; gap: 15px; justify-content: flex-start; }
-        .action-buttons button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; font-weight: bold; }
-        #analyze-btn { background-color: #28a745; color: white; }
-        #analyze-btn:disabled { background-color: #adb5bd; cursor: not-allowed; }
-        #reset-btn { background-color: #dc3545; color: white; }
-        #export-csv-btn { background-color: #ffc107; color: #333; }
-        
-        /* Indicateurs */
-        .robust-high { background-color: #d4edda; color: #155724; }
-        .robust-medium { background-color: #fff3cd; color: #856404; }
-        .robust-low { background-color: #f8d7da; color: #721c24; }
-        .valid-sum { background-color: #d4edda; }
-        .invalid-sum { background-color: #f8d7da; }
-        .error-message { color: #dc3545; font-weight: bold; margin-top: 10px; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analyse de Sensibilité MCDA - Calculateur</title>
+  <style>
+    body { font-family: 'Arial', sans-serif; background-color: #f4f7f9; color: #333; padding: 20px; }
+    .container { max-width: 1200px; margin: auto; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); padding: 30px; }
+    h2 { color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-top: 0; }
+    .tab-controls { display: flex; margin-bottom: 20px; }
+    .tab-controls button { flex-grow: 1; padding: 10px 20px; border: none; background-color: #e9ecef; color: #495057; cursor: pointer; border-radius: 4px 4px 0 0; transition: background-color 0.3s; }
+    .tab-controls button.active { background-color: #007bff; color: white; }
+    .input-section, .results-section { margin-top: 20px; }
+
+    .config-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px; background: #e6f3ff; border-radius: 6px; }
+    .weights-input, .names-input { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .weight-item, .name-item { flex: 1 1 180px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; background-color: #f8f9fa; }
+    .weight-item input, .name-item input { width: 100%; box-sizing: border-box; padding: 5px; border: 1px solid #ddd; border-radius: 3px; }
+    #weight-sum { font-weight: bold; margin-left: 20px; padding: 5px 10px; border-radius: 4px; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #dee2e6; padding: 8px; text-align: center; }
+    th { background-color: #007bff; color: white; }
+    td input { width: 60px; padding: 5px; border: 1px solid #ddd; border-radius: 3px; text-align: center; }
+
+    .action-buttons { margin-top: 20px; display: flex; gap: 15px; justify-content: flex-start; }
+    .action-buttons button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; font-weight: bold; }
+    #analyze-btn { background-color: #28a745; color: white; }
+    #analyze-btn:disabled { background-color: #adb5bd; cursor: not-allowed; }
+    #reset-btn { background-color: #dc3545; color: white; }
+    #export-csv-btn { background-color: #ffc107; color: #333; }
+
+    .robust-high { background-color: #d4edda; color: #155724; }
+    .robust-medium { background-color: #fff3cd; color: #856404; }
+    .robust-low { background-color: #f8d7da; color: #721c24; }
+    .valid-sum { background-color: #d4edda; }
+    .invalid-sum { background-color: #f8d7da; }
+    .error-message { color: #dc3545; font-weight: bold; margin-top: 10px; }
+
+    .note { background: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; border-radius: 6px; margin-top: 10px; }
+  </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🎯 Sensitivity Analyzer - MCDA Weight Bounds Calculator</h2>
+  <h2>🎯 Sensitivity Analyzer - MCDA Weight Bounds Calculator</h2>
 
-    <div class="config-bar">
-        <div id="dimensions-info">Dimensions actuelles : 7 Alternatives x 8 Critères</div>
-        <button onclick="showConfigModal()">⚙️ Configurer Dimensions</button>
+  <div class="config-bar">
+    <div id="dimensions-info">Dimensions actuelles : 7 Alternatives x 8 Critères</div>
+    <button onclick="showConfigModal()">⚙️ Configurer Dimensions</button>
+  </div>
+
+  <div class="tab-controls">
+    <button id="tab-input-btn" class="active" onclick="switchTab('input')">1. Saisie des Données</button>
+    <button id="tab-results-btn" onclick="switchTab('results')" disabled>2. Résultats de l'Analyse</button>
+  </div>
+
+  <div id="input-tab" class="input-section">
+    <h3>Poids des Critères (Somme doit être 1.0)</h3>
+    <div class="weights-input" id="weights-container"></div>
+    <div style="display:flex;align-items:center;margin-bottom:20px;">
+      <label>Somme Totale :</label>
+      <span id="weight-sum" class="invalid-sum">0.00</span>
     </div>
 
-    <div class="tab-controls">
-        <button id="tab-input-btn" class="active" onclick="switchTab('input')">1. Saisie des Données</button>
-        <button id="tab-results-btn" onclick="switchTab('results')" disabled>2. Résultats de l'Analyse</button>
+    <div class="note">
+      <b>Hypothèse de sensibilité utilisée :</b> on fait varier un seul poids <i>w<sub>k</sub></i> et on re-normalise proportionnellement les autres poids
+      (leurs ratios restent constants) afin de garder Σw = 1.
     </div>
 
-    <div id="input-tab" class="input-section">
-        <h3>Poids des Critères (Somme doit être 1.0)</h3>
-        <div class="weights-input" id="weights-container"></div>
-        <div style="display: flex; align-items: center; margin-bottom: 20px;">
-            <label>Somme Totale :</label>
-            <span id="weight-sum" class="invalid-sum">0.00</span>
-        </div>
-        
-        <h3>Noms des Critères</h3>
-        <div class="names-input" id="criteria-names-container"></div>
-        
-        <h3>Noms des Alternatives</h3>
-        <div class="names-input" id="alternatives-names-container"></div>
+    <h3>Noms des Critères</h3>
+    <div class="names-input" id="criteria-names-container"></div>
 
-        <h3>Matrice des Valeurs Normalisées V<sub>ij</sub> (entre 0 et 1)</h3>
-        <div id="matrix-container"></div>
+    <h3>Noms des Alternatives</h3>
+    <div class="names-input" id="alternatives-names-container"></div>
 
-        <p class="error-message" id="validation-error"></p>
+    <h3>Matrice des Valeurs Normalisées V<sub>ij</sub> (entre 0 et 1)</h3>
+    <div id="matrix-container"></div>
 
-        <div class="action-buttons">
-            <button id="analyze-btn" onclick="runAnalysis()" disabled>🚀 Analyser la Sensibilité</button>
-            <button id="reset-btn" onclick="resetData()">🗑️ Réinitialiser</button>
-        </div>
+    <p class="error-message" id="validation-error"></p>
+
+    <div class="action-buttons">
+      <button id="analyze-btn" onclick="runAnalysis()" disabled>🚀 Analyser la Sensibilité</button>
+      <button id="reset-btn" onclick="resetData()">🗑️ Réinitialiser</button>
     </div>
+  </div>
 
-    <div id="results-tab" class="results-section" style="display: none;">
-        <h3>Classement Actuel</h3>
-        <div id="ranking-results"></div>
-        
-        <h3 style="margin-top: 30px;">Résultats de Sensibilité (Intervalle de Stabilité)</h3>
-        <div id="sensitivity-results"></div>
+  <div id="results-tab" class="results-section" style="display:none;">
+    <h3>Classement Actuel</h3>
+    <div id="ranking-results"></div>
 
-        <div class="action-buttons">
-            <button id="export-csv-btn" onclick="exportResults()">⬇️ Exporter les Résultats (CSV)</button>
-        </div>
+    <h3 style="margin-top:30px;">Résultats de Sensibilité (Intervalle de Stabilité)</h3>
+    <div id="sensitivity-results"></div>
+
+    <div class="action-buttons">
+      <button id="export-csv-btn" onclick="exportResults()">⬇️ Exporter les Résultats (CSV)</button>
     </div>
+  </div>
 </div>
 
-<div id="config-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000; justify-content: center; align-items: center;">
-    <div style="background: white; padding: 30px; border-radius: 8px; width: 350px;">
-        <h3>Configurer les Dimensions</h3>
-        <div style="margin-bottom: 15px;">
-            <label for="num-criteria">Nombre de Critères (2-20):</label>
-            <input type="number" id="num-criteria" min="2" max="20" style="width: 100px; padding: 8px; border: 1px solid #ccc; margin-left: 10px;">
-        </div>
-        <div style="margin-bottom: 20px;">
-            <label for="num-alternatives">Nombre d'Alternatives (2-20):</label>
-            <input type="number" id="num-alternatives" min="2" max="20" style="width: 100px; padding: 8px; border: 1px solid #ccc; margin-left: 10px;">
-        </div>
-        <div style="display: flex; justify-content: flex-end; gap: 10px;">
-            <button onclick="hideConfigModal()" style="background: #6c757d; color: white;">Annuler</button>
-            <button onclick="applyChanges()" style="background: #007bff; color: white;">Appliquer les Changements</button>
-        </div>
+<div id="config-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+  <div style="background:white; padding:30px; border-radius:8px; width:350px;">
+    <h3>Configurer les Dimensions</h3>
+    <div style="margin-bottom:15px;">
+      <label for="num-criteria">Nombre de Critères (2-20):</label>
+      <input type="number" id="num-criteria" min="2" max="20" style="width:100px; padding:8px; border:1px solid #ccc; margin-left:10px;">
     </div>
+    <div style="margin-bottom:20px;">
+      <label for="num-alternatives">Nombre d'Alternatives (2-20):</label>
+      <input type="number" id="num-alternatives" min="2" max="20" style="width:100px; padding:8px; border:1px solid #ccc; margin-left:10px;">
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:10px;">
+      <button onclick="hideConfigModal()" style="background:#6c757d; color:white;">Annuler</button>
+      <button onclick="applyChanges()" style="background:#007bff; color:white;">Appliquer les Changements</button>
+    </div>
+  </div>
 </div>
 
 <script>
-    // ----------------------------------------------------------------------------------
-    // 1. DÉFINITION DES DONNÉES PAR DÉFAUT ET STRUCTURES
-    // ----------------------------------------------------------------------------------
-    
-    const DEFAULT_CRITERIA_COUNT = 8;
-    const DEFAULT_ALTERNATIVES_COUNT = 7;
-    
-    const DEFAULT_WEIGHTS = [0.15, 0.10, 0.05, 0.20, 0.10, 0.15, 0.15, 0.10];
-    const DEFAULT_MATRIX = [
-        [0.8, 0.2, 0.5, 0.9, 0.1, 0.7, 0.4, 0.6], 
-        [0.5, 0.9, 0.1, 0.2, 0.8, 0.3, 0.7, 0.4], 
-        [0.1, 0.5, 0.8, 0.3, 0.2, 0.9, 0.6, 0.7], 
-        [0.9, 0.1, 0.2, 0.7, 0.5, 0.4, 0.8, 0.3], 
-        [0.2, 0.8, 0.9, 0.1, 0.7, 0.6, 0.3, 0.5], 
-        [0.7, 0.3, 0.4, 0.6, 0.9, 0.1, 0.5, 0.2], 
-        [0.4, 0.7, 0.6, 0.5, 0.3, 0.2, 0.9, 0.1], 
-    ];
+  // ----------------------------------------------------------------------------------
+  // 1) DONNÉES PAR DÉFAUT
+  // ----------------------------------------------------------------------------------
+  const DEFAULT_CRITERIA_COUNT = 8;
+  const DEFAULT_ALTERNATIVES_COUNT = 7;
 
-    let state = {
-        nCriteria: DEFAULT_CRITERIA_COUNT,
-        nAlternatives: DEFAULT_ALTERNATIVES_COUNT,
-        weights: [...DEFAULT_WEIGHTS],
-        matrix: DEFAULT_MATRIX.map(row => [...row]),
-        criterionNames: Array.from({ length: DEFAULT_CRITERIA_COUNT }, (_, i) => `C${i + 1}`),
-        alternativeNames: Array.from({ length: DEFAULT_ALTERNATIVES_COUNT }, (_, i) => `A${i + 1}`),
-        initialRankingIndices: [],
-        sensitivityResults: [],
-        rankingResults: [],
-    };
-    
-    // ----------------------------------------------------------------------------------
-    // 2. RENDU DE L'INTERFACE UTILISATEUR
-    // ----------------------------------------------------------------------------------
+  const DEFAULT_WEIGHTS = [0.1535, 0.1256, 0.1023, 0.0767, 0.2791, 0.0326, 0.0767, 0.1535];
 
-    function renderInputUI() {
-        document.getElementById('dimensions-info').textContent = 
-            `${state.nAlternatives} Alternatives x ${state.nCriteria} Critères`;
-        
-        renderWeights();
-        renderNames();
-        renderMatrix();
-        checkWeightsSum();
-    }
+  const DEFAULT_MATRIX = [
+    [0.143103448, 0.148936170, 0.088495575, 0.102857143, 0.162371134, 0.155844156, 0.135922330, 0.258064516],
+    [0.142959770, 0.127659574, 0.141592920, 0.148571429, 0.146907216, 0.129870130, 0.116504854, 0.193548387],
+    [0.143390805, 0.170212766, 0.061946903, 0.074285714, 0.126288660, 0.103896104, 0.233009709, 0.150537634],
+    [0.143247126, 0.127659574, 0.115044248, 0.120000000, 0.149484536, 0.129870130, 0.155339806, 0.129032258],
+    [0.142097701, 0.106382979, 0.159292035, 0.154285714, 0.087628866, 0.103896104, 0.071844660, 0.075268817],
+    [0.142816092, 0.191489362, 0.247787611, 0.205714286, 0.224226804, 0.246753247, 0.194174757, 0.107526882],
+    [0.142385057, 0.127659574, 0.185840708, 0.194285714, 0.103092784, 0.129870130, 0.093203883, 0.086021505]
+  ];
 
-    function renderWeights() {
-        const container = document.getElementById('weights-container');
-        container.innerHTML = '';
-        state.weights.forEach((w, j) => {
-            const div = document.createElement('div');
-            div.className = 'weight-item';
-            div.innerHTML = `
-                <label for="w${j}">${state.criterionNames[j]} (Poids):</label>
-                <input type="number" id="w${j}" value="${w.toFixed(4)}" min="0" max="1" step="0.0001" onchange="updateWeight(${j}, this.value)">
-            `;
-            container.appendChild(div);
-        });
-    }
-    
-    function renderNames() {
-        const cContainer = document.getElementById('criteria-names-container');
-        cContainer.innerHTML = '';
-        state.criterionNames.forEach((name, j) => {
-            const div = document.createElement('div');
-            div.className = 'name-item';
-            div.innerHTML = `
-                <label for="c_name${j}">Critère ${j + 1}:</label>
-                <input type="text" id="c_name${j}" value="${name}" onchange="updateCriterionName(${j}, this.value)">
-            `;
-            cContainer.appendChild(div);
-        });
-        
-        const aContainer = document.getElementById('alternatives-names-container');
-        aContainer.innerHTML = '';
-        state.alternativeNames.forEach((name, i) => {
-            const div = document.createElement('div');
-            div.className = 'name-item';
-            div.innerHTML = `
-                <label for="a_name${i}">Alternative ${i + 1}:</label>
-                <input type="text" id="a_name${i}" value="${name}" onchange="updateAlternativeName(${i}, this.value)">
-            `;
-            aContainer.appendChild(div);
-        });
-    }
+  let state = {
+    nCriteria: DEFAULT_CRITERIA_COUNT,
+    nAlternatives: DEFAULT_ALTERNATIVES_COUNT,
+    weights: [...DEFAULT_WEIGHTS],
+    matrix: DEFAULT_MATRIX.map(row => [...row]),
+    criterionNames: Array.from({ length: DEFAULT_CRITERIA_COUNT }, (_, i) => `C${i + 1}`),
+    alternativeNames: Array.from({ length: DEFAULT_ALTERNATIVES_COUNT }, (_, i) => `A${i + 1}`),
+    initialRankingIndices: [],
+    sensitivityResults: [],
+    rankingResults: [],
+  };
 
-    function renderMatrix() {
-        const container = document.getElementById('matrix-container');
-        container.innerHTML = '';
+  // ----------------------------------------------------------------------------------
+  // 2) HELPERS
+  // ----------------------------------------------------------------------------------
+  function fmt(x) {
+    return (typeof x === "number" && isFinite(x)) ? x.toFixed(4) : "—";
+  }
 
-        let html = '<table><thead><tr><th>Alternative</th>';
-        state.criterionNames.forEach(name => {
-            html += `<th>${name}</th>`;
-        });
-        html += '</tr></thead><tbody>';
+  // ----------------------------------------------------------------------------------
+  // 3) RENDER UI
+  // ----------------------------------------------------------------------------------
+  function renderInputUI() {
+    document.getElementById('dimensions-info').textContent =
+      `${state.nAlternatives} Alternatives x ${state.nCriteria} Critères`;
 
-        state.matrix.forEach((row, i) => {
-            html += `<tr><td>${state.alternativeNames[i]}</td>`;
-            row.forEach((value, j) => {
-                html += `<td><input type="number" value="${value.toFixed(4)}" min="0" max="1" step="0.0001" onchange="updateMatrixValue(${i}, ${j}, this.value)"></td>`;
-            });
-            html += '</tr>';
-        });
+    renderWeights();
+    renderNames();
+    renderMatrix();
+    checkWeightsSum();
+  }
 
-        html += '</tbody></table>';
-        container.innerHTML = html;
-    }
+  function renderWeights() {
+    const container = document.getElementById('weights-container');
+    container.innerHTML = '';
+    state.weights.forEach((w, j) => {
+      const div = document.createElement('div');
+      div.className = 'weight-item';
+      div.innerHTML = `
+        <label for="w${j}">${state.criterionNames[j]} (Poids):</label>
+        <input type="number" id="w${j}" value="${w.toFixed(4)}" min="0" max="1" step="0.0001"
+               onchange="updateWeight(${j}, this.value)">
+      `;
+      container.appendChild(div);
+    });
+  }
 
-    // ----------------------------------------------------------------------------------
-    // 3. LOGIQUE DE MISE À JOUR DE L'ÉTAT
-    // ----------------------------------------------------------------------------------
-
-    function updateWeight(index, value) {
-        state.weights[index] = Math.max(0, parseFloat(value));
-        checkWeightsSum();
-    }
-    
-    function updateCriterionName(index, value) {
-        state.criterionNames[index] = value;
-        renderWeights(); // Re-render pour mettre à jour les labels
-        renderMatrix(); // Re-render pour mettre à jour les headers
-    }
-    
-    function updateAlternativeName(index, value) {
-        state.alternativeNames[index] = value;
-        renderMatrix(); // Re-render pour mettre à jour les labels de ligne
-    }
-
-    function updateMatrixValue(i, j, value) {
-        state.matrix[i][j] = Math.min(1, Math.max(0, parseFloat(value)));
-    }
-
-    function checkWeightsSum() {
-        const sum = state.weights.reduce((a, b) => a + b, 0);
-        const sumElement = document.getElementById('weight-sum');
-        const isValid = Math.abs(sum - 1.0) < 1e-6;
-        
-        sumElement.textContent = sum.toFixed(4);
-        sumElement.className = isValid ? 'valid-sum' : 'invalid-sum';
-        
-        document.getElementById('analyze-btn').disabled = !isValid;
-        return isValid;
-    }
-    
-    function switchTab(tab) {
-        document.getElementById('input-tab').style.display = (tab === 'input' ? 'block' : 'none');
-        document.getElementById('results-tab').style.display = (tab === 'results' ? 'block' : 'none');
-        
-        document.getElementById('tab-input-btn').classList.toggle('active', tab === 'input');
-        document.getElementById('tab-results-btn').classList.toggle('active', tab === 'results');
-    }
-
-    // ----------------------------------------------------------------------------------
-    // 4. LOGIQUE DE CONFIGURATION (TAILLE DE LA MATRICE)
-    // ----------------------------------------------------------------------------------
-
-    function showConfigModal() {
-        document.getElementById('config-modal').style.display = 'flex';
-        document.getElementById('num-criteria').value = state.nCriteria;
-        document.getElementById('num-alternatives').value = state.nAlternatives;
-    }
-
-    function hideConfigModal() {
-        document.getElementById('config-modal').style.display = 'none';
-    }
-
-    function applyChanges() {
-        const newNCriteria = Math.max(2, Math.min(20, parseInt(document.getElementById('num-criteria').value) || state.nCriteria));
-        const newNAlternatives = Math.max(2, Math.min(20, parseInt(document.getElementById('num-alternatives').value) || state.nAlternatives));
-        
-        // --- Mise à jour des Critères/Poids ---
-        if (newNCriteria !== state.nCriteria) {
-            state.nCriteria = newNCriteria;
-            
-            // Recréer les noms
-            state.criterionNames = Array.from({ length: newNCriteria }, (_, i) => `C${i + 1}`);
-            
-            // Recréer les poids et normaliser (1/n)
-            const newWeight = 1.0 / newNCriteria;
-            state.weights = Array(newNCriteria).fill(newWeight);
-            
-            // Ajuster la matrice : ajouter/enlever des colonnes
-            state.matrix = state.matrix.map(row => {
-                const newRow = row.slice(0, newNCriteria);
-                while (newRow.length < newNCriteria) {
-                    newRow.push(0.5); // Valeur par défaut
-                }
-                return newRow;
-            });
-        }
-        
-        // --- Mise à jour des Alternatives ---
-        if (newNAlternatives !== state.nAlternatives) {
-            state.nAlternatives = newNAlternatives;
-            
-            // Recréer les noms
-            state.alternativeNames = Array.from({ length: newNAlternatives }, (_, i) => `A${i + 1}`);
-
-            // Ajuster la matrice : ajouter/enlever des lignes
-            while (state.matrix.length < newNAlternatives) {
-                state.matrix.push(Array(state.nCriteria).fill(0.5)); // Nouvelle ligne par défaut
-            }
-            state.matrix = state.matrix.slice(0, newNAlternatives);
-        }
-
-        hideConfigModal();
-        renderInputUI();
-    }
-    
-    function resetData() {
-        state.nCriteria = DEFAULT_CRITERIA_COUNT;
-        state.nAlternatives = DEFAULT_ALTERNATIVES_COUNT;
-        state.weights = [...DEFAULT_WEIGHTS];
-        state.matrix = DEFAULT_MATRIX.map(row => [...row]);
-        state.criterionNames = Array.from({ length: DEFAULT_CRITERIA_COUNT }, (_, i) => `C${i + 1}`);
-        state.alternativeNames = Array.from({ length: DEFAULT_ALTERNATIVES_COUNT }, (_, i) => `A${i + 1}`);
-        
-        renderInputUI();
-        switchTab('input');
-        document.getElementById('tab-results-btn').disabled = true;
-        document.getElementById('validation-error').textContent = '';
-        document.getElementById('ranking-results').innerHTML = '';
-        document.getElementById('sensitivity-results').innerHTML = '';
-    }
-
-
-    // ----------------------------------------------------------------------------------
-    // 5. MOTEUR DE CALCUL DE SENSIBILITÉ (LOGIQUE DU PROMPT PRÉCÉDENT)
-    // ----------------------------------------------------------------------------------
-
-    function calculateScores(matrix, weights) {
-        const nAlternatives = matrix.length;
-        const scores = new Array(nAlternatives).fill(0);
-
-        for (let i = 0; i < nAlternatives; i++) {
-            for (let j = 0; j < weights.length; j++) {
-                scores[i] += matrix[i][j] * weights[j];
-            }
-        }
-        return scores;
-    }
-
-    function getRanking(scores, alternativeNames) {
-        const ranking = scores.map((score, index) => ({
-            score,
-            alternative: alternativeNames[index],
-            initialIndex: index,
-            rank: 0,
-        })).sort((a, b) => b.score - a.score);
-
-        if (ranking.length > 0) {
-            ranking[0].rank = 1;
-            for (let i = 1; i < ranking.length; i++) {
-                if (Math.abs(ranking[i].score - ranking[i - 1].score) < 1e-6) {
-                    ranking[i].rank = ranking[i - 1].rank;
-                } else {
-                    ranking[i].rank = i + 1;
-                }
-            }
-        }
-
-        return ranking;
-    }
-
-    function calculateSensitivityBounds(matrix, weights, criterionIndex, initialRankingIndices) {
-        const nAlternatives = matrix.length;
-        const initialWk = weights[criterionIndex];
-        const initialWsum = weights.reduce((sum, w) => sum + w, 0);
-
-        if (Math.abs(initialWk - 1.0) < 1e-6 || Math.abs(initialWsum - 1.0) > 1e-6) {
-            return [initialWk, initialWk];
-        }
-
-        const W_non_k_sum = initialWsum - initialWk;
-        if (Math.abs(W_non_k_sum) < 1e-9) {
-             return [0.0, 1.0];
-        }
-
-        const A = new Array(nAlternatives).fill(0);
-        const B = new Array(nAlternatives).fill(0);
-        
-        for (let i = 0; i < nAlternatives; i++) {
-            const V_i_k = matrix[i][criterionIndex];
-            let Sum_V_W_non_k = 0;
-            
-            for (let j = 0; j < weights.length; j++) {
-                if (j !== criterionIndex) {
-                    Sum_V_W_non_k += matrix[i][j] * weights[j];
-                }
-            }
-            
-            const commonTerm = Sum_V_W_non_k / W_non_k_sum;
-            A[i] = V_i_k - commonTerm;
-            B[i] = commonTerm;
-        }
-
-        const optimalAlternativeIndex = initialRankingIndices[0];
-        let lowerBound = 0.0;
-        let upperBound = 1.0;
-
-        for (let l = 0; l < nAlternatives; l++) {
-            if (l === optimalAlternativeIndex) continue;
-
-            const i = optimalAlternativeIndex;
-            
-            const numerator = B[l] - B[i];
-            const denominator = A[i] - A[l];
-
-            if (Math.abs(denominator) > 1e-9) { 
-                const Wk_crit = numerator / denominator;
-
-                if (denominator > 0) {
-                    lowerBound = Math.max(lowerBound, Wk_crit);
-                } else { 
-                    upperBound = Math.min(upperBound, Wk_crit);
-                }
-            }
-        }
-        
-        lowerBound = Math.max(0.0, lowerBound);
-        upperBound = Math.min(1.0, upperBound);
-        
-        if (lowerBound > upperBound) {
-            // Dans ce cas, l'ordre initial n'est possible qu'avec le point initial, ou c'est un problème de précision.
-            // On s'assure que l'intervalle est valide et contient le poids initial s'il est valide.
-             if (lowerBound > initialWk && upperBound < initialWk) {
-                return [initialWk, initialWk]; 
-             } else {
-                 return [Math.min(lowerBound, upperBound), Math.max(lowerBound, upperBound)];
-             }
-        }
-
-        return [lowerBound, upperBound];
-    }
-
-    function validateAnalysisData(data) {
-        const { matrix, weights } = data;
-        const nAlternatives = matrix.length;
-        const nCriteria = weights.length;
-
-        if (nAlternatives < 2 || nCriteria < 2) {
-            return { valid: false, error: "Minimum 2 critères et 2 alternatives requis." };
-        }
-        
-        const weightSum = weights.reduce((sum, w) => sum + w, 0);
-        if (Math.abs(weightSum - 1.0) > 1e-6) {
-            return { valid: false, error: `La somme des poids (${weightSum.toFixed(4)}) doit être égale à 1.0.` };
-        }
-        
-        if (!matrix.every(row => row.length === nCriteria)) {
-            return { valid: false, error: "Erreur de dimension de la matrice." };
-        }
-
-        if (!weights.every(w => w >= 0 && w <= 1) || !matrix.flat().every(v => v >= 0 && v <= 1)) {
-            return { valid: false, error: "Toutes les valeurs doivent être entre 0 et 1." };
-        }
-
-        return { valid: true };
-    }
-
-
-    function runAnalysis() {
-        const validation = validateAnalysisData(state);
-        const errorElement = document.getElementById('validation-error');
-        
-        errorElement.textContent = '';
-        document.getElementById('tab-results-btn').disabled = true;
-
-        if (!validation.valid) {
-            errorElement.textContent = `Erreur de validation: ${validation.error}`;
-            return;
-        }
-
-        // 1. Calcul des scores et classement initial
-        const scores = calculateScores(state.matrix, state.weights);
-        const ranking = getRanking(scores, state.alternativeNames);
-        state.rankingResults = ranking;
-        state.initialRankingIndices = ranking.map(r => r.initialIndex);
-        
-        // 2. Analyse de sensibilité pour chaque critère
-        const sensitivityResults = [];
-        for (let k = 0; k < state.nCriteria; k++) {
-            const [lb, ub] = calculateSensitivityBounds(state.matrix, state.weights, k, state.initialRankingIndices);
-            const stabilityRange = parseFloat((ub - lb).toFixed(4));
-            
-            let robustness;
-            if (stabilityRange > 0.5) {
-                robustness = 'Très Robuste';
-            } else if (stabilityRange > 0.2) {
-                robustness = 'Robuste';
-            } else {
-                robustness = 'Sensible';
-            }
-            
-            sensitivityResults.push({
-                criterion: state.criterionNames[k],
-                currentWeight: state.weights[k],
-                lowerBound: parseFloat(lb.toFixed(4)),
-                upperBound: parseFloat(ub.toFixed(4)),
-                stabilityRange,
-                robustness,
-            });
-        }
-        state.sensitivityResults = sensitivityResults;
-
-        // 3. Affichage des résultats
-        renderResults();
-        document.getElementById('tab-results-btn').disabled = false;
-        switchTab('results');
-    }
-
-    function renderResults() {
-        // Classement
-        let rankingHtml = '<table><thead><tr><th>Rang</th><th>Alternative</th><th>Score</th></tr></thead><tbody>';
-        state.rankingResults.forEach(r => {
-            rankingHtml += `<tr><td>${r.rank}</td><td>${r.alternative}</td><td>${r.score.toFixed(4)}</td></tr>`;
-        });
-        rankingHtml += '</tbody></table>';
-        document.getElementById('ranking-results').innerHTML = rankingHtml;
-
-        // Sensibilité
-        let sensitivityHtml = '<table><thead><tr><th>Critère</th><th>Poids Actuel</th><th>LB (Min)</th><th>UB (Max)</th><th>Zone de Stabilité</th><th>Robustesse</th></tr></thead><tbody>';
-        state.sensitivityResults.forEach(r => {
-            let robustClass;
-            if (r.robustness === 'Très Robuste') robustClass = 'robust-high';
-            else if (r.robustness === 'Robuste') robustClass = 'robust-medium';
-            else robustClass = 'robust-low';
-            
-            sensitivityHtml += `<tr>
-                <td>${r.criterion}</td>
-                <td>${r.currentWeight.toFixed(4)}</td>
-                <td>${r.lowerBound.toFixed(4)}</td>
-                <td>${r.upperBound.toFixed(4)}</td>
-                <td class="${robustClass}">${r.stabilityRange.toFixed(4)}</td>
-                <td class="${robustClass}">${r.robustness}</td>
-            </tr>`;
-        });
-        sensitivityHtml += '</tbody></table>';
-        document.getElementById('sensitivity-results').innerHTML = sensitivityHtml;
-    }
-
-    function exportResults() {
-        if (!state.rankingResults.length || !state.sensitivityResults.length) {
-            alert("Veuillez effectuer l'analyse d'abord.");
-            return;
-        }
-
-        let csvContent = "data:text/csv;charset=utf-8,";
-        
-        // Entête de la section Classement
-        csvContent += "Classement Actuel\n";
-        csvContent += "Rang;Alternative;Score\n";
-        state.rankingResults.forEach(r => {
-            csvContent += `${r.rank};${r.alternative};${r.score.toFixed(4)}\n`;
-        });
-
-        // Entête de la section Sensibilité
-        csvContent += "\nAnalyse de Sensibilité\n";
-        csvContent += "Critere;Poids Actuel;Limite Inferieure (LB);Limite Superieure (UB);Zone de Stabilite;Robustesse\n";
-        state.sensitivityResults.forEach(r => {
-            csvContent += `${r.criterion};${r.currentWeight.toFixed(4)};${r.lowerBound.toFixed(4)};${r.upperBound.toFixed(4)};${r.stabilityRange.toFixed(4)};${r.robustness}\n`;
-        });
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "analyse_sensibilite_mcda.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-    
-    // ----------------------------------------------------------------------------------
-    // 6. INITIALISATION
-    // ----------------------------------------------------------------------------------
-    document.addEventListener('DOMContentLoaded', () => {
-        // Pour s'assurer que les données par défaut ont le bon format
-        state.matrix = DEFAULT_MATRIX.map(row => [...row]);
-        state.weights = [...DEFAULT_WEIGHTS];
-
-        renderInputUI();
+  function renderNames() {
+    const cContainer = document.getElementById('criteria-names-container');
+    cContainer.innerHTML = '';
+    state.criterionNames.forEach((name, j) => {
+      const div = document.createElement('div');
+      div.className = 'name-item';
+      div.innerHTML = `
+        <label for="c_name${j}">Critère ${j + 1}:</label>
+        <input type="text" id="c_name${j}" value="${name}" onchange="updateCriterionName(${j}, this.value)">
+      `;
+      cContainer.appendChild(div);
     });
 
+    const aContainer = document.getElementById('alternatives-names-container');
+    aContainer.innerHTML = '';
+    state.alternativeNames.forEach((name, i) => {
+      const div = document.createElement('div');
+      div.className = 'name-item';
+      div.innerHTML = `
+        <label for="a_name${i}">Alternative ${i + 1}:</label>
+        <input type="text" id="a_name${i}" value="${name}" onchange="updateAlternativeName(${i}, this.value)">
+      `;
+      aContainer.appendChild(div);
+    });
+  }
+
+  function renderMatrix() {
+    const container = document.getElementById('matrix-container');
+    container.innerHTML = '';
+
+    let html = '<table><thead><tr><th>Alternative</th>';
+    state.criterionNames.forEach(name => { html += `<th>${name}</th>`; });
+    html += '</tr></thead><tbody>';
+
+    state.matrix.forEach((row, i) => {
+      html += `<tr><td>${state.alternativeNames[i]}</td>`;
+      row.forEach((value, j) => {
+        html += `<td><input type="number" value="${Number(value).toFixed(4)}" min="0" max="1" step="0.0001"
+                    onchange="updateMatrixValue(${i}, ${j}, this.value)"></td>`;
+      });
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  }
+
+  // ----------------------------------------------------------------------------------
+  // 4) UPDATE INPUTS
+  // ----------------------------------------------------------------------------------
+  function updateWeight(index, value) {
+    const v = parseFloat(value);
+    state.weights[index] = isFinite(v) ? Math.max(0, v) : 0;
+    checkWeightsSum();
+  }
+
+  function updateCriterionName(index, value) {
+    state.criterionNames[index] = value;
+    renderWeights();
+    renderMatrix();
+  }
+
+  function updateAlternativeName(index, value) {
+    state.alternativeNames[index] = value;
+    renderMatrix();
+  }
+
+  function updateMatrixValue(i, j, value) {
+    const v = parseFloat(value);
+    const clamped = isFinite(v) ? Math.min(1, Math.max(0, v)) : 0;
+    state.matrix[i][j] = clamped;
+  }
+
+  function checkWeightsSum() {
+    const sum = state.weights.reduce((a, b) => a + b, 0);
+    const sumElement = document.getElementById('weight-sum');
+    const isValid = Math.abs(sum - 1.0) < 1e-6;
+
+    sumElement.textContent = sum.toFixed(4);
+    sumElement.className = isValid ? 'valid-sum' : 'invalid-sum';
+
+    document.getElementById('analyze-btn').disabled = !isValid;
+    return isValid;
+  }
+
+  function switchTab(tab) {
+    document.getElementById('input-tab').style.display = (tab === 'input' ? 'block' : 'none');
+    document.getElementById('results-tab').style.display = (tab === 'results' ? 'block' : 'none');
+
+    document.getElementById('tab-input-btn').classList.toggle('active', tab === 'input');
+    document.getElementById('tab-results-btn').classList.toggle('active', tab === 'results');
+  }
+
+  // ----------------------------------------------------------------------------------
+  // 5) CONFIG MODAL
+  // ----------------------------------------------------------------------------------
+  function showConfigModal() {
+    document.getElementById('config-modal').style.display = 'flex';
+    document.getElementById('num-criteria').value = state.nCriteria;
+    document.getElementById('num-alternatives').value = state.nAlternatives;
+  }
+
+  function hideConfigModal() {
+    document.getElementById('config-modal').style.display = 'none';
+  }
+
+  function applyChanges() {
+    const newNCriteria = Math.max(2, Math.min(20, parseInt(document.getElementById('num-criteria').value) || state.nCriteria));
+    const newNAlternatives = Math.max(2, Math.min(20, parseInt(document.getElementById('num-alternatives').value) || state.nAlternatives));
+
+    if (newNCriteria !== state.nCriteria) {
+      state.nCriteria = newNCriteria;
+      state.criterionNames = Array.from({ length: newNCriteria }, (_, i) => `C${i + 1}`);
+      const newWeight = 1.0 / newNCriteria;
+      state.weights = Array(newNCriteria).fill(newWeight);
+
+      state.matrix = state.matrix.map(row => {
+        const newRow = row.slice(0, newNCriteria);
+        while (newRow.length < newNCriteria) newRow.push(0.5);
+        return newRow;
+      });
+    }
+
+    if (newNAlternatives !== state.nAlternatives) {
+      state.nAlternatives = newNAlternatives;
+      state.alternativeNames = Array.from({ length: newNAlternatives }, (_, i) => `A${i + 1}`);
+
+      while (state.matrix.length < newNAlternatives) state.matrix.push(Array(state.nCriteria).fill(0.5));
+      state.matrix = state.matrix.slice(0, newNAlternatives);
+    }
+
+    hideConfigModal();
+    renderInputUI();
+  }
+
+  function resetData() {
+    state.nCriteria = DEFAULT_CRITERIA_COUNT;
+    state.nAlternatives = DEFAULT_ALTERNATIVES_COUNT;
+    state.weights = [...DEFAULT_WEIGHTS];
+    state.matrix = DEFAULT_MATRIX.map(row => [...row]);
+    state.criterionNames = Array.from({ length: DEFAULT_CRITERIA_COUNT }, (_, i) => `C${i + 1}`);
+    state.alternativeNames = Array.from({ length: DEFAULT_ALTERNATIVES_COUNT }, (_, i) => `A${i + 1}`);
+
+    renderInputUI();
+    switchTab('input');
+    document.getElementById('tab-results-btn').disabled = true;
+    document.getElementById('validation-error').textContent = '';
+    document.getElementById('ranking-results').innerHTML = '';
+    document.getElementById('sensitivity-results').innerHTML = '';
+  }
+
+  // ----------------------------------------------------------------------------------
+  // 6) CORE MCDA
+  // ----------------------------------------------------------------------------------
+  function calculateScores(matrix, weights) {
+    const nAlternatives = matrix.length;
+    const scores = new Array(nAlternatives).fill(0);
+    for (let i = 0; i < nAlternatives; i++) {
+      let s = 0;
+      for (let j = 0; j < weights.length; j++) s += matrix[i][j] * weights[j];
+      scores[i] = s;
+    }
+    return scores;
+  }
+
+  function getRanking(scores, alternativeNames) {
+    const ranking = scores.map((score, index) => ({
+      score,
+      alternative: alternativeNames[index],
+      initialIndex: index,
+      rank: 0
+    })).sort((a, b) => b.score - a.score);
+
+    if (ranking.length > 0) {
+      ranking[0].rank = 1;
+      for (let i = 1; i < ranking.length; i++) {
+        if (Math.abs(ranking[i].score - ranking[i - 1].score) < 1e-6) ranking[i].rank = ranking[i - 1].rank;
+        else ranking[i].rank = i + 1;
+      }
+    }
+    return ranking;
+  }
+
+  function validateAnalysisData(data) {
+    const { matrix, weights } = data;
+    const nAlternatives = matrix.length;
+    const nCriteria = weights.length;
+    if (nAlternatives < 2 || nCriteria < 2) return { valid: false, error: "Minimum 2 critères et 2 alternatives requis." };
+    const weightSum = weights.reduce((sum, w) => sum + w, 0);
+    if (Math.abs(weightSum - 1.0) > 1e-6) return { valid: false, error: `Somme = ${weightSum.toFixed(4)}. Doit être 1.0.` };
+    return { valid: true };
+  }
+
+  // ----------------------------------------------------------------------------------
+  // 7) SENSITIVITY (CORRIGÉE)
+  //    Hypothèse: variation d’un poids + renormalisation proportionnelle des autres.
+  //    Gère:
+  //      - denominator ~ 0 => intervalle vide / contrainte toujours vraie
+  //      - TOP1 ex aequo => intersection des intervalles pour chaque gagnant possible
+  // ----------------------------------------------------------------------------------
+  function calculateSensitivityBounds(matrix, weights, criterionIndex, initialRankingIndices, tiedTopSet = null) {
+    const nAlternatives = matrix.length;
+    const nCriteria = weights.length;
+
+    const wSum = weights.reduce((s, w) => s + w, 0);
+    if (Math.abs(wSum - 1.0) > 1e-6) return { lb: NaN, ub: NaN, status: "INVALID_WEIGHTS" };
+
+    const wk0 = weights[criterionIndex];
+    const W_non_k_sum = 1.0 - wk0;
+    if (W_non_k_sum < 1e-12) return { lb: wk0, ub: wk0, status: "DEGENERATE" };
+
+    // P_i = sum_{j != k} alpha_j * v_ij avec alpha_j = w_j / (1 - w_k)
+    const P = new Array(nAlternatives).fill(0);
+    for (let i = 0; i < nAlternatives; i++) {
+      let sum = 0;
+      for (let j = 0; j < nCriteria; j++) {
+        if (j === criterionIndex) continue;
+        sum += matrix[i][j] * (weights[j] / W_non_k_sum);
+      }
+      P[i] = sum;
+    }
+
+    // Contraintes: S_i*(x) >= S_l(x) avec S_i(x)=P_i + x*(v_ik - P_i)
+    function boundsForWinner(iStar) {
+      let lb = 0.0;
+      let ub = 1.0;
+
+      for (let l = 0; l < nAlternatives; l++) {
+        if (l === iStar) continue;
+
+        // (P_i - P_l) + x * [ (v_i - P_i) - (v_l - P_l) ] >= 0
+        const num = P[iStar] - P[l];
+        const den = (matrix[iStar][criterionIndex] - P[iStar]) - (matrix[l][criterionIndex] - P[l]);
+
+        if (Math.abs(den) <= 1e-10) {
+          // pas de dépendance en x : num >= 0 => toujours ok ; num < 0 => impossible => intervalle vide
+          if (num < -1e-10) return { lb: NaN, ub: NaN, status: "EMPTY" };
+          continue;
+        }
+
+        const xCrit = -num / den;
+
+        if (den > 0) lb = Math.max(lb, xCrit);   // x >= xCrit
+        else ub = Math.min(ub, xCrit);           // x <= xCrit
+
+        if (lb - ub > 1e-10) return { lb: NaN, ub: NaN, status: "EMPTY" };
+      }
+
+      lb = Math.max(0.0, lb);
+      ub = Math.min(1.0, ub);
+      if (lb - ub > 1e-10) return { lb: NaN, ub: NaN, status: "EMPTY" };
+      return { lb, ub, status: "OK" };
+    }
+
+    // TOP1 unique
+    if (!tiedTopSet || tiedTopSet.length <= 1) {
+      const iStar = initialRankingIndices[0];
+      return boundsForWinner(iStar);
+    }
+
+    // TOP1 ex aequo => intersection des intervalles de chaque gagnant possible
+    let finalLb = 0.0, finalUb = 1.0;
+    for (const iStar of tiedTopSet) {
+      const r = boundsForWinner(iStar);
+      if (r.status === "EMPTY") return r;
+      finalLb = Math.max(finalLb, r.lb);
+      finalUb = Math.min(finalUb, r.ub);
+      if (finalLb - finalUb > 1e-10) return { lb: NaN, ub: NaN, status: "EMPTY" };
+    }
+    return { lb: finalLb, ub: finalUb, status: "OK_TIED" };
+  }
+
+  // ----------------------------------------------------------------------------------
+  // 8) RUN + RENDER RESULTS
+  // ----------------------------------------------------------------------------------
+  function runAnalysis() {
+    const validation = validateAnalysisData(state);
+    const errorElement = document.getElementById('validation-error');
+    errorElement.textContent = '';
+    if (!validation.valid) { errorElement.textContent = validation.error; return; }
+
+    const scores = calculateScores(state.matrix, state.weights);
+    const ranking = getRanking(scores, state.alternativeNames);
+    state.rankingResults = ranking;
+    state.initialRankingIndices = ranking.map(r => r.initialIndex);
+
+    // Détection TOP1 ex aequo
+    const topScore = ranking[0].score;
+    const tiedTop = ranking
+      .filter(r => Math.abs(r.score - topScore) < 1e-6)
+      .map(r => r.initialIndex);
+
+    const sensitivityResults = [];
+    for (let k = 0; k < state.nCriteria; k++) {
+      const res = calculateSensitivityBounds(state.matrix, state.weights, k, state.initialRankingIndices, tiedTop);
+
+      const lb = res.lb;
+      const ub = res.ub;
+
+      let stabilityRange = (typeof lb === "number" && typeof ub === "number" && isFinite(lb) && isFinite(ub))
+        ? parseFloat((ub - lb).toFixed(4))
+        : 0;
+
+      let robustness;
+      if (res.status === "EMPTY") robustness = "Instable (intervalle vide)";
+      else robustness = stabilityRange > 0.5 ? "Très Robuste" : stabilityRange > 0.2 ? "Robuste" : "Sensible";
+
+      sensitivityResults.push({
+        criterion: state.criterionNames[k],
+        currentWeight: state.weights[k],
+        lowerBound: lb,
+        upperBound: ub,
+        stabilityRange,
+        robustness,
+        status: res.status
+      });
+    }
+
+    state.sensitivityResults = sensitivityResults;
+    renderResults();
+    document.getElementById('tab-results-btn').disabled = false;
+    switchTab('results');
+  }
+
+  function renderResults() {
+    // Ranking
+    let rankingHtml = '<table><thead><tr><th>Rang</th><th>Alternative</th><th>Score</th></tr></thead><tbody>';
+    state.rankingResults.forEach(r => {
+      rankingHtml += `<tr><td>${r.rank}</td><td>${r.alternative}</td><td>${r.score.toFixed(4)}</td></tr>`;
+    });
+    document.getElementById('ranking-results').innerHTML = rankingHtml + '</tbody></table>';
+
+    // Sensitivity
+    let sensitivityHtml = '<table><thead><tr><th>Critère</th><th>Poids</th><th>LB</th><th>UB</th><th>Stabilité</th><th>Robustesse</th><th>Status</th></tr></thead><tbody>';
+
+    state.sensitivityResults.forEach(r => {
+      let rc;
+      if (r.status === "EMPTY") rc = 'robust-low';
+      else if (r.robustness === 'Très Robuste') rc = 'robust-high';
+      else if (r.robustness === 'Robuste') rc = 'robust-medium';
+      else rc = 'robust-low';
+
+      sensitivityHtml += `
+        <tr>
+          <td>${r.criterion}</td>
+          <td>${r.currentWeight.toFixed(4)}</td>
+          <td>${fmt(r.lowerBound)}</td>
+          <td>${fmt(r.upperBound)}</td>
+          <td class="${rc}">${isFinite(r.stabilityRange) ? r.stabilityRange.toFixed(4) : "—"}</td>
+          <td class="${rc}">${r.robustness}</td>
+          <td>${r.status}</td>
+        </tr>`;
+    });
+
+    document.getElementById('sensitivity-results').innerHTML = sensitivityHtml + '</tbody></table>';
+  }
+
+  function exportResults() {
+    let csv = "Classement\nRang;Alternative;Score\n";
+    state.rankingResults.forEach(r => csv += `${r.rank};${r.alternative};${r.score.toFixed(4)}\n`);
+
+    csv += "\nSensibilite\nCritere;Poids;LB;UB;Stabilite;Robustesse;Status\n";
+    state.sensitivityResults.forEach(r => {
+      const lb = (isFinite(r.lowerBound) ? r.lowerBound.toFixed(4) : "");
+      const ub = (isFinite(r.upperBound) ? r.upperBound.toFixed(4) : "");
+      const st = (isFinite(r.stabilityRange) ? r.stabilityRange.toFixed(4) : "");
+      csv += `${r.criterion};${r.currentWeight.toFixed(4)};${lb};${ub};${st};${r.robustness};${r.status}\n`;
+    });
+
+    const link = document.createElement("a");
+    link.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+    link.download = "analyse_sensibilite.csv";
+    link.click();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => { renderInputUI(); });
 </script>
 </body>
 </html>
